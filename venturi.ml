@@ -1,27 +1,33 @@
 type ide = string;;
-type exp = Eint of int | Ebool of bool | Den of ide | Prod of exp * exp | Sum of exp * exp | Diff of exp * exp |
-	Eq of exp * exp | Minus of exp | IsZero of exp | Or of exp * exp | And of exp * exp | Not of exp |
-	Ifthenelse of exp * exp * exp | Let of ide * exp * exp | Fun of ide * exp | FunCall of exp * exp |
-	Letrec of ide * ide * exp * exp;;
+(*espressioni: ciò che l'utente può usare per utilizzare il linguaggio interpreato qui definito*)
+type exp = Eint of int 	| Ebool of bool | Den of ide 	| Prod of exp * exp | Sum of exp * exp | Diff of exp * exp |
+	Eq of exp * exp 	| Minus of exp 	| IsZero of exp | Or of exp * exp 	| And of exp * exp | Not of exp |
+	Ifthenelse of exp * exp * exp 		| Let of ide * exp * exp 			| Fun of ide * exp | FunCall of exp * exp |
+	Letrec of ide * exp * exp;;
 
-(*ambiente polimorfo*)
-type 't env = ide -> 't;;
+(*ambiente polimorfo: nel nostro caso di tipo evT*)
+type 't env = ide -> 't;;	(*l'ambiente è definito come una funzione!*)
 let emptyenv (v : 't) = function x -> v;;
+(*ambiente vuoto: funzione che restituisce sempre il valore v per ogni input*)
 let applyenv (r : 't env) (i : ide) = r i;;
+(*applyenv: applica la funzione ambinente, ovvero dato un identificatore restituisce il valore cui è legato*)
+(*ambiente: pila di funzioni 'congelate' necessarie per risalire alla ricerca del legame ide-valore*)
 let bind (r : 't env) (i : ide) (v : 't) = function x -> if x = i then v else applyenv r x;;
+(*bind: aggiunge la funzione definita sopra alla pila delle chiamate che vanno a formare l'ambiente*)
 
 (*tipi esprimibili*)
-type evT = Int of int | Bool of bool | Unbound | FunVal of ide * exp * evT env | RecFunVal of ide * ide * exp * evT env;;
+type evT = Int of int | Bool of bool | Unbound | FunVal of evFun | RecFunVal of ide * evFun
+and evFun = ide * exp * evT env
 
 (*rts*)
 (*type checking*)
 let typecheck (s : string) (v : evT) : bool = match s with
 	"int" -> (match v with
 		Int(_) -> true |
-		_ -> false) |
+		_ 		-> false) |
 	"bool" -> (match v with
 		Bool(_) -> true |
-		_ -> false) |
+		_ 		-> false) |
 	_ -> failwith("not a valid type");;
 
 (*funzioni primitive*)
