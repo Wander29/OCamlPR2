@@ -3,11 +3,13 @@ type ide = string;;
 type exp = Eint of int 	| Ebool of bool | Den of ide 	| Prod of exp * exp | Sum of exp * exp | Diff of exp * exp |
 	Eq of exp * exp 	| Minus of exp 	| IsZero of exp | Or of exp * exp 	| And of exp * exp | Not of exp |
 	Ifthenelse of exp * exp * exp 		| Let of ide * exp * exp 			| Fun of ide * exp | FunCall of exp * exp |
-	Letrec of ide * exp * exp;;
+	Letrec of ide * exp * exp 			| Dict of (ide * exp)list 			| Insert of ide * exp * exp |
+	Delete of  ide * exp 				| HasKey of ide * exp				| Iterate of exp * exp	|
+	Fold of exp * exp					| Filter of ide list * exp  		| PrintDictValues of exp;;
 
 (*ambiente polimorfo: nel nostro caso di tipo evT*)
 type 't env = ide -> 't;;	(*l'ambiente è definito come una funzione!*)
-let emptyenv (v : 't) = function x -> v;;
+let emptyenv (v : 't) : 't env = function x -> v;;
 (*ambiente vuoto: funzione che restituisce sempre il valore v per ogni input*)
 let applyenv (r : 't env) (i : ide) = r i;;
 (*applyenv: applica la funzione ambinente, ovvero dato un identificatore restituisce il valore cui è legato*)
@@ -16,14 +18,15 @@ let bind (r : 't env) (i : ide) (v : 't) = function x -> if x = i then v else ap
 (*bind: aggiunge la funzione definita sopra alla pila delle chiamate che vanno a formare l'ambiente*)
 
 (*tipi esprimibili*)
-type evT = Int of int | Bool of bool | Unbound | FunVal of evFun | RecFunVal of ide * evFun
+type evT = 	Int of int | Bool of bool | Unbound | FunVal of evFun | RecFunVal of ide * evFun |
+			DictVal of (ide * evT)list 
 and evFun = ide * exp * evT env
 
 (*rts*)
 (*type checking*)
 let typecheck (s : string) (v : evT) : bool = match s with
 	"int" -> (match v with
-		Int(_) -> true |
+		Int(_) 	-> true |
 		_ 		-> false) |
 	"bool" -> (match v with
 		Bool(_) -> true |
@@ -46,7 +49,7 @@ let diff x y = if (typecheck "int" x) && (typecheck "int" y)
 		(Int(n),Int(u)) -> Int(n-u))
 	else failwith("Type error");;
 
-let eq (x:evT)(y:evT) : Bool = if (typecheck "int" x) && (typecheck "int" y)
+let eq x y = if (typecheck "int" x) && (typecheck "int" y)
 	then (match (x,y) with
 		(Int(n),Int(u)) -> Bool(n=u))
 	else if (typecheck "bool" x) && (typecheck "bool" y)
@@ -64,21 +67,23 @@ let iszero x = if (typecheck "int" x)
 		Int(n) -> Bool(n=0))
 	else failwith("Type error");;
 
-let vel x y = if (typecheck "bool" x) && (typecheck "bool" y)
+let __or x y = if (typecheck "bool" x) && (typecheck "bool" y)
 	then (match (x,y) with
 		(Bool(b),Bool(e)) -> (Bool(b||e)))
 	else failwith("Type error");;
 
-let et x y = if (typecheck "bool" x) && (typecheck "bool" y)
+let __and x y = if (typecheck "bool" x) && (typecheck "bool" y)
 	then (match (x,y) with
 		(Bool(b),Bool(e)) -> Bool(b&&e))
 	else failwith("Type error");;
 
-let non x = if (typecheck "bool" x)
+let __not x = if (typecheck "bool" x)
 	then (match x with
 		Bool(true) -> Bool(false) |
 		Bool(false) -> Bool(true))
 	else failwith("Type error");;
+
+
 
 (*interprete*)
 let rec eval (e : exp) (r : evT env) : evT = match e with
@@ -91,9 +96,9 @@ let rec eval (e : exp) (r : evT env) : evT = match e with
 	Sum(a, b) -> sum (eval a r) (eval b r) |
 	Diff(a, b) -> diff (eval a r) (eval b r) |
 	Minus a -> minus (eval a r) |
-	And(a, b) -> et (eval a r) (eval b r) |
-	Or(a, b) -> vel (eval a r) (eval b r) |
-	Not a -> non (eval a r) |
+	And(a, b) -> __and (eval a r) (eval b r) |
+	Or(a, b) -> __or (eval a r) (eval b r) |
+	Not a -> __not (eval a r) |
 	Ifthenelse(a, b, c) -> 
 		let g = (eval a r) in
 			if (typecheck "bool" g) 
@@ -116,17 +121,46 @@ let rec eval (e : exp) (r : evT env) : evT = match e with
     		(match funDef with
         		Fun(i, fBody) -> let r1 = (bind r f (RecFunVal(f, (i, fBody, r)))) in
                      			                eval letBody r1 |
-        		_ -> failwith("non functional def"));;
-		
+        		_ -> failwith("non functional def")) |
+	Dict(li) -> DictVal(evalDict li r) |
+	Iterate(f, d) -> (match eval d r with
+						DictVal(l) -> DictVal(iterateDict l f r) |
+						_ -> failwith("Not a Dictionary")) | 
+	PrintDictValues(d) -> (match eval d r with
+							DictVal(l) -> printDictValues l |
+							_ -> failwith("non dict"))
+
+
+and  evalDict (l : (ide * exp) list ) (rr : evT env) : (ide * evT)list = match l with
+		[] -> [] |
+		(i, e)::t -> (i, (eval e rr))::(evalDict t rr)
+
+and iterateDict (l : (ide * evT)list ) (f : exp) (r : evT env) : (ide * evT)list = match l with
+		[] -> [] |
+		(i, v)::t -> match eval f r with
+						FunVal(arg, body, r_static) -> let x = eval body (bind r_static arg v) in 
+									(i, x)::(iterateDict t f r) |
+						_ -> failwith("Not a fuction to iterate with")
+and printDictValues (l : (ide * evT)list ) = match l with
+		[] -> Unbound |
+		(ide, v)::t -> match v with
+				Int(u) -> Printf.printf "%s, %i; " ide u;
+		printDictValues t;;
+	
+let int_of_evT (x : evT) = match x with
+	| Int(u) -> u
+	| _ -> failwith("Tipo non intero");;
 (* =============================  TESTS  ================= *)
 
-(* basico: no let *)
-let env0 = emptyenv Unbound;;
+let env0 : ide -> evT = emptyenv Unbound;;
+
+(*
+
+eval (PrintDictValues (Dict([("gatto", Eint(3));("micio", Eint 45);("micetti belli", Eint(17))]))) env0;;
+
+eval (PrintDictValues(Let("x", Fun("y", Prod(Den "y", Eint 2)), Iterate(Den "x", Dict([("gatto", Eint(3));("micino", Eint(45))]))))) env0;;
 
 let e1 = FunCall(Fun("y", Sum(Den "y", Eint 1)), Eint 3);;
 
-eval e1 env0;;
 
-let e2 = FunCall(Let("x", Eint 2, Fun("y", Sum(Den "y", Den "x"))), Eint 3);;
-
-eval e2 env0;; 
+*)

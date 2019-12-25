@@ -1,0 +1,58 @@
+\documentclass[10pt, a4paper]{article}
+%-----------------------
+%- 	PACKAGES & SETTINGS
+%-----------------------
+\usepackage[a4paper,top=1.5cm,bottom=2cm,left=4cm,right=4cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    filecolor=magenta,      
+    urlcolor=darkgray,
+    linkcolor=black
+}
+\urlstyle{same}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\graphicspath{ {images/} }
+ 
+%-----------------------
+%- 	TITLE
+%-----------------------
+\title{\textbf{Relazione Progetto OCaml PR 2}}
+\author{\textbf{Venturi} Ludovico\\Docente: \href{http://pages.di.unipi.it/levi/}{Francesca Levi}}
+\date{UNIPI, Gennaio 2020}
+
+
+%-----------------------
+%- 	DOCUMENT
+%-----------------------
+\begin{document}
+%- 	INTRO
+\pagenumbering{roman} 
+\maketitle
+\tableofcontents
+\vfill
+\begin{figure}[h]
+	\centering
+	\includegraphics[scale=0.3]{ocaml_logo}
+	\label{fig:0}
+\end{figure}
+
+\clearpage
+
+%- 	START DOC
+\pagenumbering{arabic} 
+\section{Scelte progettuali}
+
+\section{Utilizzo}
+Per utilizzare aprire l'interprete top-level di OCaml da terminale digitando \texttt{ocaml}. Importare l'interprete del nostro linguaggio:
+\begin{center}
+\texttt{\# use "venturi.ml";;}
+\end{center}
+e da qui valutare le espressioni, entrando nel vivo del \textbf{REPL}(ReadEvalPrintLoop).
+\subsection{Esempi}
+
+\end{document}
