@@ -93,6 +93,14 @@ let __not x = if (typecheck "bool" x)
 		Bool(false) -> Bool(true))
 	else failwith("Type error");;
 
+let int_of_evT (x : evT) = match x with
+	| Int(u) -> u
+	| _ -> failwith("Tipo non intero");;
+
+let rec isIdeIn (i : ide) (l : ide list) : evT = match l with
+	[] -> Bool(false) | 
+	h::t -> if i=h then Bool(true) else isIdeIn i t;;
+
 (*interprete*)
 let rec eval (e : exp) (r : evT env) : evT = match e with
 	Eint n -> Int n |
@@ -131,7 +139,7 @@ let rec eval (e : exp) (r : evT env) : evT = match e with
 					if l1=l2 then
 						eval body (bindArgs l eArg r_static r)
 					else
-						raise (InvalidArgumentException "invalid arguments") |
+						raise (InvalidArgumentException "the function expects a different number of arguments") |
 				_ -> failwith("non functional value")) |
 
     Letrec(f, funDef, letBody) ->
@@ -140,14 +148,25 @@ let rec eval (e : exp) (r : evT env) : evT = match e with
                      			                eval letBody r1 |
         		_ -> failwith("non functional def")) |
 
-	CreateDict(li) -> DictVal(evalDict li r) |
+	CreateDict(li) -> ( match li with
+			[] -> DictVal([]) |
+			(i, e)::t -> let v = eval e r in 
+							match getType v with
+								"int" -> DictVal( (i, v)::(evalDict t r "int") )| 
+								"bool" -> DictVal( (i, v)::(evalDict t r "bool") )|
+								_ -> raise (InvalidDictionaryException "")) |
 
 	PrintDictValues(d) -> (match eval d r with
 							DictVal(l) -> printDictValues l |
 							_-> raise (InvalidDictionaryException "Not a Dictionary")) |
 
 	Insert (i, e, d) -> (match eval d r with
-							DictVal(l) -> let x = eval e r in DictVal(insertEntry l i x) |
+							DictVal(l) -> let x = eval e r in 
+								(match l with
+									[] -> DictVal(insertEntry l i x)|
+									(i, v)::t -> 
+										if getType x = getType v then DictVal(insertEntry l i x)
+										else raise (InvalidDictionaryException "Inconsistent type") ) |
 							_-> raise (InvalidDictionaryException "Not a Dictionary")) |
 	Delete(i, d) -> (match eval d r with
 						DictVal(l) -> DictVal(deleteEntry l i) |
@@ -170,9 +189,11 @@ let rec eval (e : exp) (r : evT env) : evT = match e with
 										"bool" -> foldDict l f (Bool(true)) r )|
 									_ -> raise (InvalidArgumentException "not a valid fold function"))|
 								_ -> raise (InvalidArgumentException "not a valid fold function")) |
-							_ -> raise (InvalidFunctionException "Not a fuction to fold in")) |
-						_ -> raise (InvalidDictionaryException "Not a Dictionary") )
-
+							_ -> raise (InvalidFunctionException "not a valid fold function")) |
+						_ -> raise (InvalidDictionaryException "not a Dictionary") ) |
+	Filter(ide_list, d) -> (match eval d r with
+						DictVal(l) ->  DictVal( filterDict l ide_list ) |
+							_ -> raise (InvalidDictionaryException "not a Dictionary") )
 
 and bindArgs (ide_list : ide list) (argExp_list : exp list) (r_st : evT env) (r_curr : evT env) : evT env = 
 	(match ide_list with
@@ -180,9 +201,11 @@ and bindArgs (ide_list : ide list) (argExp_list : exp list) (r_st : evT env) (r_
 		h::t -> (match argExp_list with
 			a::b -> bindArgs t b (bind r_st h (eval a r_curr)) r_curr))
 
-and evalDict (l : (ide * exp) list ) (r : evT env) : (ide * evT)list = match l with
+and evalDict (l : (ide * exp) list ) (r : evT env) (t : string) : (ide * evT)list = match l with
 		[] -> [] |
-		(i, e)::t -> (i, (eval e r))::(evalDict t r)
+		(i, e)::tail -> let x = eval e r in let t1 = getType x in
+							if t1=t then (i, x)::(evalDict tail r t)
+							else 	raise (InvalidDictionaryException "Inconsistent type")
 
 and iterateDict (l : (ide * evT)list ) (f : exp) (r : evT env) : (ide * evT)list = match l with
 		[] -> [] |
@@ -192,10 +215,10 @@ and iterateDict (l : (ide * evT)list ) (f : exp) (r : evT env) : (ide * evT)list
 
 and printDictValues (l : (ide * evT)list ) = match l with
 		[] -> Unbound |
-		(ide, v)::t -> match v with
-				Int(u) -> Printf.printf "%s, %i; " ide u;
+		(ide, v)::t -> (match v with
+				Int(u) -> Printf.printf "[%s]-> %i; " ide u |
+				Bool(z) -> 	Printf.printf "[%s]-> %B; " ide z);
 		printDictValues t
-
 
 and insertEntry (l : (ide * evT)list) (i : ide) (x : evT) : (ide * evT)list = match l with
 		[] -> [(i, x)] |
@@ -216,19 +239,18 @@ and foldDict (l : (ide * evT)list ) (f : exp) (acc : evT) (r : evT env) : evT = 
 						FunArgVal(arg, body, r_static) -> match arg with
 						a::b::[] -> let envAcc = bind r_static a acc in
 										let x = eval body (bind envAcc b v) in 
-											(foldDict t f x r);;
-	
-let int_of_evT (x : evT) = match x with
-	| Int(u) -> u
-	| _ -> failwith("Tipo non intero");;
+											(foldDict t f x r)
+
+and filterDict (l : (ide * evT)list ) (ide_l : ide list) : (ide * evT)list = match l with
+		[] -> [] | 
+		(i, v)::t -> 	if (isIdeIn i ide_l = Bool(true)) then (i, v)::(filterDict t ide_l)
+						else filterDict t ide_l;;
+
 (* =============================  TESTS  ================= *)
 
-(*
-eval (Dict([("Birman", Eint(3));("Mainecoon", Eint(13));("Siamese", Eint(17));("Foldex", Eint 21)])) env0;;
+let env0 : ide -> evT = emptyenv Unbound;;
 
-eval (PrintDictValues(Let("x", Fun("y", Prod(Den "y", Eint 2)), Iterate(Den "x", Dict([("gatto", Eint(3));("micino", Eint(45))]))))) env0;;
+let env1 = bind env0 "x" (eval (CreateDict([("Birman", Eint(3));("Mainecoon", Eint(13));("Siamese", Eint(17));("Foldex", Eint 21)])) env0);;
 
-let e1 = FunCall(Fun("y", Sum(Den "y", Eint 1)), Eint 3);;
-
-
-*)
+let env2 = bind env1 "boolDict" (eval (CreateDict(
+		[("Birman", Ebool(true));("Mainecoon", Ebool(false));("Siamese", Ebool(false));("Foldex", Ebool(false))])) env0);;
