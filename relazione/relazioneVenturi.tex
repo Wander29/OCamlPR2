@@ -46,13 +46,46 @@
 %- 	START DOC
 \pagenumbering{arabic} 
 \section{Scelte progettuali}
-
+\begin{itemize}
+\item Tutti i valori associati alle chiavi in un dizionario hanno lo stesso tipo
+\item 
+\end{itemize}
+\subsection{Sintassi Astratta}
+Estensione della sintassi astratta del linguaggio  \texttt{type exp = }\\
+\texttt{...| Dict of (ide * exp)list 			| Insert of ide * exp * exp |
+	Delete of  ide * exp 				| HasKey of ide * exp				| Iterate of exp * exp	|
+	Fold of exp * exp					| Filter of ide list * exp  		| PrintDictValues of exp;;}\\\\
+Estensione dei tipi esprimibili	\texttt{type evT = }\\
+\texttt{...|DictVal of (ide * evT)list}
 \section{Utilizzo}
-Per utilizzare aprire l'interprete top-level di OCaml da terminale digitando \texttt{ocaml}. Importare l'interprete del nostro linguaggio:
+Aprire l'interprete top-level di OCaml da terminale digitando \texttt{ocaml}. Importare l'interprete del nostro linguaggio:
 \begin{center}
 \texttt{\# use "venturi.ml";;}
 \end{center}
 e da qui valutare le espressioni, entrando nel vivo del \textbf{REPL}(ReadEvalPrintLoop).
 \subsection{Esempi}
-
+Assumendo \texttt{let env0 : ide -> evT = emptyenv Unbound;;}
+\begin{itemize}
+\item \texttt{\# let x = Dict([("Birman", Eint(3));("Mainecoon", Eint(13));("Siamese", Eint(17));("Foldex", Eint(21))]);;}\\
+\textit{val x : exp =
+  Dict
+   [("Birman", Eint 3); ("Mainecoon", Eint 13); ("Siamese", Eint 17);
+    ("Foldex", Eint 21)]
+}
+\item \texttt{\# let y = eval (Insert("Korat", Eint(4), x)) env0;; }\\
+\textit{val y : evT =
+  DictVal
+   [("Korat", Int 4); ("Birman", Int 3); ("Mainecoon", Int 13);
+    ("Siamese", Int 17); ("Foldex", Int 21)]
+}
+\end{itemize}
 \end{document}
+
+
+
+
+
+
+
+
+
