@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Arch Linux) (preloaded format=pdflatex 2019.11.23)  25 DEC 2019 11:22
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Arch Linux) (preloaded format=pdflatex 2019.11.23)  26 DEC 2019 20:58
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -401,7 +401,7 @@ LaTeX Info: Redefining \nameref on input line 32.
 \tf@toc=\write4
 \openout4 = `relazioneVenturi.toc'.
 
-<images/ocaml_logo.png, id=25, 1284.8pt x 352.31625pt>
+<images/ocaml_logo.png, id=30, 1284.8pt x 352.31625pt>
 File: images/ocaml_logo.png Graphic file (type png)
 <use images/ocaml_logo.png>
 Package pdftex.def Info: images/ocaml_logo.png  used on input line 40.
@@ -422,57 +422,58 @@ File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10> not available
 (Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 50.
 
-Overfull \hbox (8.11087pt too wide) in paragraph at lines 54--60
-\OT1/cmtt/m/n/10 ...| Dict of (ide * exp)list | Insert of ide * exp * exp | Del
-ete of ide
+Overfull \hbox (2.86092pt too wide) in paragraph at lines 57--63
+\OT1/cmtt/m/n/10 ...| CreateDict of (ide * exp)list | Insert of ide * exp * exp
+ | Delete
  []
 
 
-Overfull \hbox (8.11087pt too wide) in paragraph at lines 54--60
-\OT1/cmtt/m/n/10 * exp | HasKey of ide * exp | Iterate of exp * exp | Fold of e
-xp * exp |
+Overfull \hbox (2.86092pt too wide) in paragraph at lines 57--63
+\OT1/cmtt/m/n/10 of ide * exp | HasKey of ide * exp | Iterate of exp * exp | Fo
+ld of exp
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 54--60
+Underfull \hbox (badness 10000) in paragraph at lines 57--63
 
  []
 
 
-Overfull \hbox (27.86095pt too wide) in paragraph at lines 69--75
+Overfull \hbox (27.86095pt too wide) in paragraph at lines 75--81
 []\OT1/cmtt/m/n/10 # let x = Dict([("Birman", Eint(3));("Mainecoon", Eint(13));
 ("Siamese",
  []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 82.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 88.
 [1
 
 ]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 82.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 88.
  (./relazioneVenturi.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 82.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 82.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 88.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 88.
 Package rerunfilecheck Info: File `relazioneVenturi.out' has not changed.
-(rerunfilecheck)             Checksum: 558EB53A46B2E090B824D4763E40BF3C;217.
+(rerunfilecheck)             Checksum: B694779DE0ACA98825055746CB23D011;286.
  ) 
 Here is how much of TeX's memory you used:
- 7534 strings out of 492167
- 105577 string characters out of 6131557
- 228748 words of memory out of 5000000
- 11811 multiletter control sequences out of 15000+600000
- 9844 words of font info for 36 fonts, out of 8000000 for 9000
+ 7540 strings out of 492167
+ 105646 string characters out of 6131557
+ 230748 words of memory out of 5000000
+ 11815 multiletter control sequences out of 15000+600000
+ 10012 words of font info for 37 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  31i,7n,37p,800b,333s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/share/
 texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/share/texmf-dist/fon
-ts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/fonts/type1/public
-/amsfonts/cm/cmr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cm
-sy10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr
-/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on relazioneVenturi.pdf (2 pages, 129283 bytes).
+ts/type1/public/amsfonts/cm/cmitt10.pfb></usr/share/texmf-dist/fonts/type1/publ
+ic/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/
+cmr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></us
+r/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/share/texmf-
+dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
+Output written on relazioneVenturi.pdf (2 pages, 138898 bytes).
 PDF statistics:
- 73 PDF objects out of 1000 (max. 8388607)
- 59 compressed objects within 1 object stream
- 8 named destinations out of 1000 (max. 500000)
- 38 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 82 PDF objects out of 1000 (max. 8388607)
+ 67 compressed objects within 1 object stream
+ 9 named destinations out of 1000 (max. 500000)
+ 46 words of extra memory for PDF output out of 10000 (max. 10000000)
 

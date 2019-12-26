@@ -47,20 +47,25 @@
 \pagenumbering{arabic} 
 \section{Scelte progettuali}
 \begin{itemize}
-\item Tutti i valori associati alle chiavi in un dizionario hanno lo stesso tipo
-\item 
+\item tutti i valori associati alle chiavi in un dizionario hanno lo stesso tipo
+\item i tipi assumibili dai valori associati alle chiavi sono solamente interi e booleani, nello specifico: \textit{Int(..), Bool(..)}
+\item non sono ammessi valori \textit{Unbound} (corrispettivo di \textit{null})
+\item per semplicità di progettazione si assume che il primo valore nel dizionario, al momento della creazione, definisca il tipo dei valori del dizionario
+\item sono state introdotte le astrazioni funzionali multi argomento (funzioni con lista di parametri di dimensione variabile) per generalizzare dato che la \textit{Fold} necessita di 2 argomenti
 \end{itemize}
 \subsection{Sintassi Astratta}
 Estensione della sintassi astratta del linguaggio  \texttt{type exp = }\\
-\texttt{...| Dict of (ide * exp)list 			| Insert of ide * exp * exp |
-	Delete of  ide * exp 				| HasKey of ide * exp				| Iterate of exp * exp	|
-	Fold of exp * exp					| Filter of ide list * exp  		| PrintDictValues of exp;;}\\\\
+\texttt{...| Dict of (ide * exp)list | Insert of ide * exp * exp | Delete of  ide * exp 		| HasKey of ide * exp				| Iterate of exp * exp	|
+	Fold of exp * exp					| Filter of ide list * exp 	|  of exp;;}\\\\
 Estensione dei tipi esprimibili	\texttt{type evT = }\\
 \texttt{...|DictVal of (ide * evT)list}
+\subsection{Runtime Type Checker}
+Il \textit{Runtime Type Checker} è stato implementato per la creazione del dizionario, dove si verifica che tutti i valori siano consistenti nel tipo (o tutti interi, o tutti booleani). Influisce anche sull'operazione di inserimento, mentre sulle operazioni \textit{Delete, HasKey, Filter} non ha alcuna influenza.\\ 
+Per quanto riguarda le applicazioni di funzioni sui valori, ovvero \textit{Fold, Iterate}, si demanda il type checking (già implementato nel linguaggio didattico) alle funzioni chiamate (sfruttando la \textbf{lazy evaluation} dei parametri): se viene chiamata la Fold di una funzione che opera su booleani su di un dizionario contenente valori interi al momento della prima chiamata di funzione viene generato un \textbf{type error}.
 \section{Utilizzo}
-Aprire l'interprete top-level di OCaml da terminale digitando \texttt{ocaml}. Importare l'interprete del nostro linguaggio:
+Aprire l'interprete top-level di OCaml da terminale digitando \texttt{ocaml}. Importare l'interprete del linguaggio qui discusso:
 \begin{center}
-\texttt{\# use "venturi.ml";;}
+\texttt{\emph{\#}\# use "venturi.ml";;}
 \end{center}
 e da qui valutare le espressioni, entrando nel vivo del \textbf{REPL}(ReadEvalPrintLoop).
 \subsection{Esempi}

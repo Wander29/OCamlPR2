@@ -2,6 +2,14 @@ exception InvalidDictionaryException 	of string;;
 exception InvalidFunctionException 		of string;;
 exception InvalidArgumentException 		of string;;
 
+(* ####### ESTENSIONE LINGUAGGIO: DIZIONARI #######
+	@OVERVIEW:  Un dizionario è una collezione di valori identificati univocamente da una chiave
+				ovvero una collezione di coppie chiave-valore dove la chiave è unica.
+				Si assume che tutti i valori in un dizionario siano dello stesso tipo.
+				Non sono ammessi elementi Unbound(= null); nello specifico sono ammessi 
+				solo valori booleani e interi.
+*)
+
 type ide = string;;
 (*espressioni: ciò che l'utente può usare per utilizzare il linguaggio interpreato qui definito*)
 type exp = Eint of int 	| Ebool of bool | Den of ide 	| Prod of exp * exp | Sum of exp * exp | Diff of exp * exp |
