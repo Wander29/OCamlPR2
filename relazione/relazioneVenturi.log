@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Arch Linux) (preloaded format=pdflatex 2019.11.23)  28 DEC 2019 11:48
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Arch Linux) (preloaded format=pdflatex 2019.11.23)  28 DEC 2019 12:22
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -494,7 +494,7 @@ Package rerunfilecheck Info: File `relazioneVenturi.out' has not changed.
 Here is how much of TeX's memory you used:
  7541 strings out of 492167
  105652 string characters out of 6131557
- 230748 words of memory out of 5000000
+ 230749 words of memory out of 5000000
  11815 multiletter control sequences out of 15000+600000
  10012 words of font info for 37 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
@@ -506,7 +506,7 @@ ic/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/
 cmr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></us
 r/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/share/texmf-
 dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on relazioneVenturi.pdf (3 pages, 143763 bytes).
+Output written on relazioneVenturi.pdf (3 pages, 144348 bytes).
 PDF statistics:
  86 PDF objects out of 1000 (max. 8388607)
  70 compressed objects within 1 object stream
