@@ -9,24 +9,24 @@ exception InvalidArgumentException 		of string;;
 				Non sono ammessi elementi Unbound(= null); nello specifico sono ammessi 
 				solo valori booleani e interi.
 *)
-
 type ide = string;;
 (*espressioni: ciò che l'utente può usare per utilizzare il linguaggio interpreato qui definito*)
 type exp = Eint of int 	| Ebool of bool | Den of ide 	| Prod of exp * exp | Sum of exp * exp | Diff of exp * exp |
 	Eq of exp * exp 	| Minus of exp 	| IsZero of exp | Or of exp * exp 	| And of exp * exp | Not of exp |
 	Ifthenelse of exp * exp * exp 		| Let of ide * exp * exp 			| Fun of ide * exp | FunCall of exp * exp list |
-	Letrec of ide * exp * exp 			| CreateDict of (ide * exp)list 			| Insert of ide * exp * exp |
+	Letrec of ide * exp * exp 			| CreateDict of (ide * exp)list 	| Insert of ide * exp * exp |
 	Delete of  ide * exp 				| HasKey of ide * exp				| Iterate of exp * exp	|
 	Fold of exp * exp					| Filter of ide list * exp  		| PrintDictValues of exp |
 	FunArg of ide list * exp;;
 
-(*ambiente polimorfo: nel nostro caso di tipo evT*)
 type 't env = ide -> 't;;	(*l'ambiente è definito come una funzione!*)
+(*ambiente polimorfo: nel nostro caso lo useremo di tipo evT*)
 let emptyenv (v : 't) : 't env = function x -> v;;
 (*ambiente vuoto: funzione che restituisce sempre il valore v per ogni input*)
 let applyenv (r : 't env) (i : ide) = r i;;
-(*applyenv: applica la funzione ambinente, ovvero dato un identificatore restituisce il valore cui è legato*)
-(*ambiente: pila di funzioni 'congelate' necessarie per risalire alla ricerca del legame ide-valore*)
+(*applyenv: applica la funzione ambiente, ovvero dato un identificatore restituisce il valore cui è legato*)
+(*ambiente, implementazione: 
+	pila di funzioni 'congelate' necessarie per risalire nella ricerca del legame ide-valore*)
 let bind (r : 't env) (i : ide) (v : 't) = function x -> if x = i then v else applyenv r x;;
 (*bind: aggiunge la funzione definita sopra alla pila delle chiamate che vanno a formare l'ambiente*)
 
@@ -50,6 +50,11 @@ let getType (v : evT) : string = match v with
 		Int(_) -> "int" |
 		Bool(_) -> "bool" | 
 		_ -> "other";;
+
+let getDefaultValOfType (s : string) = match s with
+	"int" -> Int(0) |
+	"bool" -> Bool(false) |
+	_ -> Unbound;;
 
 (*funzioni primitive*)
 let prod x y = if (typecheck "int" x) && (typecheck "int" y)
@@ -136,13 +141,13 @@ let rec eval (e : exp) (r : evT env) : evT = match e with
 			(match fClosure with
 				FunVal(arg, fBody, fDecEnv) -> (match eArg with 
 					h::[] -> eval fBody (bind fDecEnv arg (eval h r)) |
-					_ -> raise (InvalidArgumentException "Expected exactly 1 argument")) |
+					_ -> raise (InvalidArgumentException "expected exactly 1 argument")) |
 				RecFunVal(g, (arg, fBody, fDecEnv)) -> (match eArg with 
 					h::[] -> let aVal = (eval h r) in
 								let rEnv = (bind fDecEnv g fClosure) in
 									let aEnv = (bind rEnv arg aVal) in
 										eval fBody aEnv |
-					_ -> raise (InvalidArgumentException "Expected exactly 1 argument")) |		
+					_ -> raise (InvalidArgumentException "expected exactly 1 argument")) |		
 				FunArgVal(l, body, r_static) -> let l1 = List.length eArg in let l2 = List.length l in 
 					if l1=l2 then
 						eval body (bindArgs l eArg r_static r)
@@ -162,64 +167,61 @@ let rec eval (e : exp) (r : evT env) : evT = match e with
 							match getType v with
 								"int" -> DictVal( (i, v)::(evalDict t r "int") )| 
 								"bool" -> DictVal( (i, v)::(evalDict t r "bool") )|
-								_ -> raise (InvalidDictionaryException "")) |
+								_ -> raise (InvalidDictionaryException "invalid dictionary values type")) |
 
 	PrintDictValues(d) -> (match eval d r with
 							DictVal(l) -> printDictValues l |
-							_-> raise (InvalidDictionaryException "Not a Dictionary")) |
+							_-> raise (InvalidDictionaryException "not a Dictionary")) |
 
 	Insert (i, e, d) -> (match eval d r with
 							DictVal(l) -> let x = eval e r in 
 								(match l with
 									[] -> DictVal(insertEntry l i x)|
-									(i, v)::t -> 
+									(_, v)::t -> 
 										if getType x = getType v then DictVal(insertEntry l i x)
-										else raise (InvalidDictionaryException "Inconsistent type") ) |
-							_-> raise (InvalidDictionaryException "Not a Dictionary")) |
+										else raise (InvalidDictionaryException "inconsistent type") ) |
+							_-> raise (InvalidDictionaryException "not a Dictionary")) |
+
 	Delete(i, d) -> (match eval d r with
 						DictVal(l) -> DictVal(deleteEntry l i) |
-						_-> raise (InvalidDictionaryException "Not a Dictionary")) |
+						_-> raise (InvalidDictionaryException "not a Dictionary")) |
+
 	HasKey(i, d) -> (match eval d r with
 						DictVal(l) -> hasKeyDict l i |
-						_-> raise (InvalidDictionaryException "Not a Dictionary")) |
+						_-> raise (InvalidDictionaryException "not a Dictionary")) |
+
 	Iterate(f, d) -> (match eval d r with
-						DictVal(l) -> (match eval f r with
-							FunVal(arg, body, r_static) -> DictVal(iterateDict l f r) |
-							_ -> raise (InvalidFunctionException "Not a fuction to iterate with")) |
-						_ -> raise (InvalidDictionaryException "Not a Dictionary") ) |
+						DictVal(l) -> let funEv = eval f r in (match funEv with
+							FunVal(arg, body, r_static) -> DictVal(iterateDict l funEv r) |
+							_ -> raise (InvalidFunctionException "not a fuction to iterate with")) |
+						_ -> raise (InvalidDictionaryException "not a Dictionary") ) |
 	
 	Fold(f, d) -> (match eval d r with
-						DictVal(l) -> (match eval f r with
+						DictVal(l) -> let funEv = eval f r in (match funEv with
 							FunArgVal(arg, body, r_static) -> (match l with
 								(i, v)::t ->  (match arg with
-									a::b::[] -> (match getType v with
-										"int" -> foldDict l f (Int(0)) r  | 
-										"bool" -> foldDict l f (Bool(true)) r )|
-									_ -> raise (InvalidArgumentException "not a valid fold function"))|
-								_ -> raise (InvalidArgumentException "not a valid fold function")) |
+									_::_::[] -> let typ = getType v in
+										foldDict l funEv (getDefaultValOfType typ) r |
+									_ -> raise (InvalidArgumentException "not a valid fold function: not 2 args"))|
+								_ -> raise (InvalidDictionaryException "empty Dictionary")) |
 							_ -> raise (InvalidFunctionException "not a valid fold function")) |
 						_ -> raise (InvalidDictionaryException "not a Dictionary") ) |
+
 	Filter(ide_list, d) -> (match eval d r with
 						DictVal(l) ->  DictVal( filterDict l ide_list ) |
-							_ -> raise (InvalidDictionaryException "not a Dictionary") )
+						_ -> raise (InvalidDictionaryException "not a Dictionary") )
 
 and bindArgs (ide_list : ide list) (argExp_list : exp list) (r_st : evT env) (r_curr : evT env) : evT env = 
 	(match ide_list with
-		[] -> r_st | 
+		[] -> r_st | (*ho già controllato che la lunghezza dei parametri formali ed attuali sia uguale*)
 		h::t -> (match argExp_list with
 			a::b -> bindArgs t b (bind r_st h (eval a r_curr)) r_curr))
 
-and evalDict (l : (ide * exp) list ) (r : evT env) (t : string) : (ide * evT)list = match l with
+and evalDict (l : (ide * exp) list ) (r : evT env) (typ : string) : (ide * evT)list = match l with
 		[] -> [] |
-		(i, e)::tail -> let x = eval e r in let t1 = getType x in
-							if t1=t then (i, x)::(evalDict tail r t)
-							else 	raise (InvalidDictionaryException "Inconsistent type")
-
-and iterateDict (l : (ide * evT)list ) (f : exp) (r : evT env) : (ide * evT)list = match l with
-		[] -> [] |
-		(i, v)::t -> match eval f r with
-						FunVal(arg, body, r_static) -> let x = eval body (bind r_static arg v) in 
-									(i, x)::(iterateDict t f r)
+		(i, e)::t -> let x = eval e r in let typ1 = getType x in
+							if typ1=typ then (i, x)::(evalDict t r typ)
+							else 	raise (InvalidDictionaryException "inconsistent type")
 
 and printDictValues (l : (ide * evT)list ) = match l with
 		[] -> Unbound |
@@ -230,20 +232,26 @@ and printDictValues (l : (ide * evT)list ) = match l with
 
 and insertEntry (l : (ide * evT)list) (i : ide) (x : evT) : (ide * evT)list = match l with
 		[] -> [(i, x)] |
-		(a, v)::t -> if a=i then raise (InvalidArgumentException "Key already present") 
+		(a, v)::t -> if a=i then raise (InvalidArgumentException "key already present") 
 							else (a,v)::(insertEntry t i x)
 
 and deleteEntry (l : (ide * evT)list) (x : ide) : (ide * evT)list = match l with
-		[] -> raise (InvalidArgumentException "Key not present") |
+		[] -> raise (InvalidArgumentException "key not present") |
 		(i, v)::t -> if x=i then t else (i,v)::(deleteEntry t x)
 
 and hasKeyDict (l : (ide * evT)list) (x : ide) : evT = match l with
 		[] -> Bool(false) |
 		(i, v)::t -> if x=i then Bool(true) else hasKeyDict t x
 
-and foldDict (l : (ide * evT)list ) (f : exp) (acc : evT) (r : evT env) : evT = match l with
+and iterateDict (l : (ide * evT)list ) (f : evT) (r : evT env) : (ide * evT)list = match l with
+		[] -> [] |
+		(i, v)::t -> match f with
+						FunVal(arg, body, r_static) -> let x = eval body (bind r_static arg v) in 
+									(i, x)::(iterateDict t f r)
+
+and foldDict (l : (ide * evT)list ) (f : evT) (acc : evT) (r : evT env) : evT = match l with
 		[] -> acc |
-		(i, v)::t -> match eval f r with
+		(i, v)::t -> match f with
 						FunArgVal(arg, body, r_static) -> match arg with
 						a::b::[] -> let envAcc = bind r_static a acc in
 										let x = eval body (bind envAcc b v) in 
@@ -254,11 +262,14 @@ and filterDict (l : (ide * evT)list ) (ide_l : ide list) : (ide * evT)list = mat
 		(i, v)::t -> 	if (isIdeIn i ide_l = Bool(true)) then (i, v)::(filterDict t ide_l)
 						else filterDict t ide_l;;
 
-(* =============================  TESTS  ================= *)
+(* =============================  ENVs_for_TESTS  ================= *)
 
 let env0 : ide -> evT = emptyenv Unbound;;
 
-let env1 = bind env0 "x" (eval (CreateDict([("Birman", Eint(3));("Mainecoon", Eint(13));("Siamese", Eint(17));("Foldex", Eint 21)])) env0);;
+let env1 = bind env0 "intDict" (eval (CreateDict([("Birman", Eint(3));("Mainecoon", Eint(13));
+										("Siamese", Eint(17));("Foldex", Eint(21))])) env0);;
 
 let env2 = bind env1 "boolDict" (eval (CreateDict(
 		[("Birman", Ebool(true));("Mainecoon", Ebool(false));("Siamese", Ebool(false));("Foldex", Ebool(false))])) env0);;
+
+let env3 = bind env2 "emptyDict" (eval (CreateDict([])) env1);;
