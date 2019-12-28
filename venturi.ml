@@ -46,11 +46,15 @@ let typecheck (s : string) (v : evT) : bool = match s with
 		_ 		-> false) |
 	_ -> failwith("not a valid type");;
 
+(*restituisce il tipo (sottoforma di stringa) del valore evT passato;
+	utilizzato per effettuare type-checking nel dizionario *)
 let getType (v : evT) : string = match v with
 		Int(_) -> "int" |
 		Bool(_) -> "bool" | 
 		_ -> "other";;
 
+(*restituisce il valore di default associato al tipo passato per argomento;
+	utilizzato per inizializzare l'accumulatore della Fold*)
 let getDefaultValOfType (s : string) = match s with
 	"int" -> Int(0) |
 	"bool" -> Bool(false) |
@@ -110,11 +114,12 @@ let int_of_evT (x : evT) = match x with
 	| Int(u) -> u
 	| _ -> failwith("Tipo non intero");;
 
+(*cerca una stringa in una lista di stringhe restituendo un Bool*)
 let rec isIdeIn (i : ide) (l : ide list) : evT = match l with
 	[] -> Bool(false) | 
 	h::t -> if i=h then Bool(true) else isIdeIn i t;;
 
-(*interprete*)
+(*valutatore*)
 let rec eval (e : exp) (r : evT env) : evT = match e with
 	Eint n -> Int n |
 	Ebool b -> Bool b |
@@ -152,7 +157,8 @@ let rec eval (e : exp) (r : evT env) : evT = match e with
 					if l1=l2 then
 						eval body (bindArgs l eArg r_static r)
 					else
-						raise (InvalidArgumentException "the function expects a different number of arguments") |
+						raise (InvalidArgumentException ("the function expects " ^ string_of_int l2 ^ 
+								" arguments, while " ^ string_of_int l1 ^ " arguments are passed") ) |
 				_ -> failwith("non functional value")) |
 
     Letrec(f, funDef, letBody) ->
@@ -160,7 +166,7 @@ let rec eval (e : exp) (r : evT env) : evT = match e with
         		Fun(i, fBody) -> let r1 = (bind r f (RecFunVal(f, (i, fBody, r)))) in
                      			                eval letBody r1 |
         		_ -> failwith("non functional def")) |
-
+    (*il primo valore determina il tipo del dizionario*)
 	CreateDict(li) -> ( match li with
 			[] -> DictVal([]) |
 			(i, e)::t -> let v = eval e r in 
@@ -172,7 +178,7 @@ let rec eval (e : exp) (r : evT env) : evT = match e with
 	PrintDictValues(d) -> (match eval d r with
 							DictVal(l) -> printDictValues l |
 							_-> raise (InvalidDictionaryException "not a Dictionary")) |
-
+	(*inserisce una coppia nel dizionario sse la chaive non è già presente E il tipo del valore è consistente*)
 	Insert (i, e, d) -> (match eval d r with
 							DictVal(l) -> let x = eval e r in 
 								(match l with
@@ -181,21 +187,22 @@ let rec eval (e : exp) (r : evT env) : evT = match e with
 										if getType x = getType v then DictVal(insertEntry l i x)
 										else raise (InvalidDictionaryException "inconsistent type") ) |
 							_-> raise (InvalidDictionaryException "not a Dictionary")) |
-
+	(*elimina la coppia (i, v) dal dizionario se la chaive è presente*)
 	Delete(i, d) -> (match eval d r with
 						DictVal(l) -> DictVal(deleteEntry l i) |
 						_-> raise (InvalidDictionaryException "not a Dictionary")) |
-
+	(*restituisce true se la chiave è presente nel dizionario*)
 	HasKey(i, d) -> (match eval d r with
 						DictVal(l) -> hasKeyDict l i |
 						_-> raise (InvalidDictionaryException "not a Dictionary")) |
-
+	(*applica la funzione f ad ogni valore presente nel dizionario restituendo un dizionario di coppie (i, v')*)
 	Iterate(f, d) -> (match eval d r with
 						DictVal(l) -> let funEv = eval f r in (match funEv with
 							FunVal(arg, body, r_static) -> DictVal(iterateDict l funEv r) |
 							_ -> raise (InvalidFunctionException "not a fuction to iterate with")) |
 						_ -> raise (InvalidDictionaryException "not a Dictionary") ) |
-	
+	(*applica sequenzialmente la funzione f su ogni valore del dizionario, utilizzando un accumulatore
+		da utilizzare come primo input per la successiva applicazione della funzione*)
 	Fold(f, d) -> (match eval d r with
 						DictVal(l) -> let funEv = eval f r in (match funEv with
 							FunArgVal(arg, body, r_static) -> (match l with
@@ -203,10 +210,10 @@ let rec eval (e : exp) (r : evT env) : evT = match e with
 									_::_::[] -> let typ = getType v in
 										foldDict l funEv (getDefaultValOfType typ) r |
 									_ -> raise (InvalidArgumentException "not a valid fold function: not 2 args"))|
-								_ -> raise (InvalidDictionaryException "empty Dictionary")) |
+								_ -> Unbound) |
 							_ -> raise (InvalidFunctionException "not a valid fold function")) |
 						_ -> raise (InvalidDictionaryException "not a Dictionary") ) |
-
+	(*restituisce il dizionario composto solamente dalle coppie i cui identificatori sono presenti in ide_list*)
 	Filter(ide_list, d) -> (match eval d r with
 						DictVal(l) ->  DictVal( filterDict l ide_list ) |
 						_ -> raise (InvalidDictionaryException "not a Dictionary") )

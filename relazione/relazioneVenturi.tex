@@ -51,6 +51,7 @@
 \item i tipi assumibili dai valori associati alle chiavi sono solamente interi e booleani, nello specifico: \textit{Int(..), Bool(..)}
 \item non sono ammessi valori \textit{Unbound} (corrispettivo di \textit{null})
 \item per semplicità di progettazione si assume che il primo valore nel dizionario, al momento della creazione, definisca il tipo dei valori del dizionario
+\item la \texttt{Fold} è stata interpretata come funzione a 2 argomenti, dove il primo è l'\textit{accumulatore} che prende il valore di default del tipo del dizionario; la \texttt{Fold} è applicabile sia ad interi che a booleani
 \item sono state introdotte le astrazioni funzionali multi argomento (funzioni con lista di parametri di dimensione variabile) per generalizzare dato che la \texttt{Fold} necessita di 2 argomenti
 \end{itemize}
 \subsection{Sintassi Astratta}
@@ -62,7 +63,7 @@ Estensione dei tipi esprimibili	\texttt{type evT = }\\
 \texttt{...| DictVal of (ide * evT)list |...\\...| FunArgVal of ide list * exp * evT env }
 \subsection{Runtime Type Checker}
 Il \textit{Runtime Type Checker} è stato implementato per la creazione del dizionario, dove si verifica che tutti i valori siano consistenti nel tipo (o tutti interi, o tutti booleani). Influisce anche sull'operazione di inserimento, mentre sulle operazioni \texttt{Delete, HasKey, Filter} non ha alcuna influenza.\\ 
-Per quanto riguarda le applicazioni di funzioni sui valori, ovvero \texttt{Fold, Iterate}, si demanda il type checking (già implementato nel linguaggio didattico) alle funzioni chiamate (sfruttando la \textbf{lazy evaluation} dei parametri): se viene chiamata la \texttt{Fold} di una funzione che opera su booleani su di un dizionario contenente valori interi al momento della prima chiamata di funzione viene generato un \textbf{type error}.
+Per quanto riguarda le applicazioni di funzioni sui valori, ovvero \texttt{Fold, Iterate}, si demanda il type checking (già implementato nel linguaggio didattico) alle funzioni chiamate (sfruttando una sorta di \textbf{lazy evaluation} per i parametri attuali della funzione): se viene chiamata la \texttt{Fold} di una funzione che opera su booleani su di un dizionario contenente valori interi al momento della prima chiamata di funzione viene generato un \textbf{type error}.
 \section{Utilizzo}
 Aprire l'interprete top-level di OCaml da terminale digitando \texttt{ocaml}.\\ Importare l'interprete del linguaggio qui discusso:
 \begin{center}
@@ -93,9 +94,18 @@ DictVal
 \end{itemize}
 \item \textbf{Fold}
 \begin{itemize}
-\item \texttt{•} \\ \textit{•}
+\item \texttt{
+let env5 = bind env3 "foldFun" (eval (FunArg(["x"; "y"], Prod(Sum(Den "x", Den "y"), Eint 3) )) env3 );;\\
+eval (Fold(Den "foldFun", Den "intDict")) env5;;} \\ \textit{- : evT = Int 810}
 
-\item \texttt{•}\\ \textit{•}
+\item \texttt{
+eval (Let("magazzino", CreateDict( [\\ ("mele", Eint(430)); ("banane", Eint(312)); ("arance", Eint(525)); ("pere", Eint(217))] ),\\ 
+	Let("ff", FunArg(["x"; "y"], Sum(Sum(Den "x", Den "y"), Eint(1))), Fold(Den "ff", Den "magazzino")))) env3;;}\\ \textit{- : evT = Int 1488}
+	
+\item \texttt{eval (Fold(
+			FunArg(["a"; "b"], Or(Not(Den "a"), Den "b")),\\
+			Den "intDict"  
+		)) env3;;} \\ \textit{Exception: Failure "Type error".}
 \end{itemize}
 \end{itemize}
 \end{document}
